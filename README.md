@@ -31,6 +31,10 @@ On purpose, this tool never touches:
 
 A Chrome window opens automatically on first run. Log into Instacart there — that's the only manual step, and only needed once, since the profile persists on disk for every run after.
 
+### Even easier: double-click to start the agent
+
+Instead of opening a terminal and running `npm run serve` yourself, double-click **`Start Instacart Agent.command`** in Finder — it opens a terminal window and starts the agent for you. (First double-click ever: if macOS blocks it as from an "unidentified developer," right-click it and choose Open instead — only needed once.)
+
 ## Using it from a web app (local agent mode)
 
 ```
