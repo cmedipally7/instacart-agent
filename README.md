@@ -25,11 +25,14 @@ On purpose, this tool never touches:
 
 ## Setup
 
-1. Quit any running Chrome, then relaunch it with remote debugging enabled:
+1. Quit any running Chrome, then relaunch it with remote debugging enabled, pointed at a **dedicated profile directory** — Chrome refuses to enable remote debugging on your regular default profile at all ("DevTools remote debugging requires a non-default data directory"), so this creates a separate persistent one just for this tool:
    ```
-   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --remote-debugging-port=9222
+   mkdir -p ~/.instacart-agent-chrome-profile
+   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+     --remote-debugging-port=9222 \
+     --user-data-dir="$HOME/.instacart-agent-chrome-profile"
    ```
-2. In that Chrome window, log into instacart.com normally and set your delivery address.
+2. In that Chrome window, log into instacart.com normally and set your delivery address. Since the profile directory persists, you only need to do this once — future runs reuse the same login.
 3. `npm install`
 4. `cp items.example.json items.json` and edit it.
 5. `node src/index.js items.json`
