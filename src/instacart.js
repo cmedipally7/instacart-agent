@@ -1,16 +1,39 @@
 import { chromium } from "playwright-core";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 const HOME_URL = "https://www.instacart.com";
+const PROFILE_DIR = process.env.INSTACART_AGENT_PROFILE_DIR ?? join(homedir(), ".instacart-agent-chrome-profile");
 
-// Uses a dedicated tab for Instacart rather than whichever tab happens to be
-// first in the window — that's often the tab showing the calling app itself,
-// and hijacking it mid-request would yank the page out from under the user.
-export async function attach(cdpUrl) {
-  const browser = await chromium.connectOverCDP(cdpUrl);
-  const context = browser.contexts()[0] ?? (await browser.newContext());
-  let page = context.pages().find((p) => p.url().startsWith(HOME_URL));
+let contextPromise = null;
+
+// Launches (and reuses) a single visible Chrome window owned by this agent,
+// using your real system Chrome install with a persistent profile — no
+// manual Chrome launch, no remote-debugging flags, no "quit your browser
+// first" step, and no headless/stealth automation. The profile persists on
+// disk, so you only log into Instacart once; every later run reuses it.
+export async function launchBrowser() {
+  if (!contextPromise) {
+    contextPromise = chromium.launchPersistentContext(PROFILE_DIR, {
+      channel: "chrome",
+      headless: false,
+      viewport: null,
+    });
+  }
+  const context = await contextPromise;
+  let page = context.pages().find((p) => p.url().startsWith(HOME_URL)) ?? context.pages()[0];
   if (!page) page = await context.newPage();
-  return { browser, page };
+  if (!page.url().startsWith(HOME_URL)) {
+    await page.goto(HOME_URL, { waitUntil: "domcontentloaded" }).catch(() => {});
+  }
+  return { page };
+}
+
+export async function closeBrowser() {
+  if (!contextPromise) return;
+  const context = await contextPromise;
+  contextPromise = null;
+  await context.close().catch(() => {});
 }
 
 export async function goHome(page) {

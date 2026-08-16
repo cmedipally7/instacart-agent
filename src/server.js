@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
-import { attach, goHome, listStores, openStore, searchAndAdd } from "./instacart.js";
+import { closeBrowser, goHome, launchBrowser, listStores, openStore, searchAndAdd } from "./instacart.js";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4545;
-const CDP_URL = process.env.CDP_URL ?? "http://localhost:9222";
 // Comma-separated list of origins allowed to call this agent, e.g. your
 // hosted frontend's URL. "*" is intentionally not supported: this agent can
 // add items to a real cart, so only known origins should be allowed to call it.
@@ -47,10 +46,9 @@ const server = createServer(async (req, res) => {
 
   try {
     if (req.method === "GET" && req.url === "/stores") {
-      const { browser, page } = await attach(CDP_URL);
+      const { page } = await launchBrowser();
       await goHome(page);
       const stores = await listStores(page);
-      await browser.close();
       return sendJson(res, 200, { stores });
     }
 
@@ -60,7 +58,7 @@ const server = createServer(async (req, res) => {
         return sendJson(res, 400, { error: "Expected { storeHref, items: [{ query, quantity }] }" });
       }
 
-      const { browser, page } = await attach(CDP_URL);
+      const { page } = await launchBrowser();
       await openStore(page, storeHref);
 
       const results = [];
@@ -71,7 +69,6 @@ const server = createServer(async (req, res) => {
           results.push({ query: item.query, added: false, reason: err.message });
         }
       }
-      await browser.close();
       return sendJson(res, 200, { results });
     }
 
@@ -84,5 +81,12 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Instacart agent listening on http://localhost:${PORT}`);
   console.log(`Allowed origins: ${ALLOWED_ORIGINS.join(", ")}`);
-  console.log(`Attaching to Chrome via ${CDP_URL} on each request.`);
+  console.log(`Chrome will open on the first request and stay open across requests.`);
 });
+
+async function shutdown() {
+  await closeBrowser();
+  process.exit(0);
+}
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);

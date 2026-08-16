@@ -17,29 +17,23 @@ The script lists the stores available for your delivery address and asks you to 
 
 ## How it works
 
-This does **not** use Instacart's API (there isn't a public one for this) and does **not** use any anti-bot-detection or fingerprint-spoofing tooling. It attaches Playwright to a Chrome window you already have open and logged into, over Chrome's [remote debugging protocol](https://chromedevtools.github.io/devtools-protocol/), and clicks around exactly like you would. Nothing runs headless, nothing hides that it's automated.
+This does **not** use Instacart's API (there isn't a public one for this) and does **not** use any anti-bot-detection or fingerprint-spoofing tooling. It launches your real, installed Chrome — visibly, never headless — using [Playwright](https://playwright.dev/), and clicks around exactly like you would. The browser gets its own dedicated, persistent profile directory (`~/.instacart-agent-chrome-profile` by default) separate from your everyday Chrome profile, so it doesn't touch your regular browsing session, but it remembers your Instacart login across runs.
 
 On purpose, this tool never touches:
-- **Login** — you log into Instacart yourself, in your own browser, beforehand.
-- **Checkout** — the script stops once items are in the cart. You review and pay yourself.
+- **Login** — you log into Instacart yourself, in the window it opens, the first time you run it.
+- **Checkout** — it stops once items are in the cart. You review and pay yourself.
 
 ## Setup
 
-1. Quit any running Chrome, then relaunch it with remote debugging enabled, pointed at a **dedicated profile directory** — Chrome refuses to enable remote debugging on your regular default profile at all ("DevTools remote debugging requires a non-default data directory"), so this creates a separate persistent one just for this tool:
-   ```
-   mkdir -p ~/.instacart-agent-chrome-profile
-   /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-     --remote-debugging-port=9222 \
-     --user-data-dir="$HOME/.instacart-agent-chrome-profile"
-   ```
-2. In that Chrome window, log into instacart.com normally and set your delivery address. Since the profile directory persists, you only need to do this once — future runs reuse the same login.
-3. `npm install`
-4. `cp items.example.json items.json` and edit it.
-5. `node src/index.js items.json`
+1. `npm install`
+2. `cp items.example.json items.json` and edit it.
+3. `node src/index.js items.json`
+
+A Chrome window opens automatically on first run. Log into Instacart there — that's the only manual step, and only needed once, since the profile persists on disk for every run after.
 
 ## Using it from a web app (local agent mode)
 
-`npm run serve` starts an HTTP server on `localhost:4545` exposing the same search/add logic, so a frontend running in your own browser can call it (e.g. a "Connect Instacart" button). It's meant to run on your own machine, next to the same logged-in Chrome from Setup above — never deployed as a shared/hosted service, since whoever can reach it can add to your cart.
+`npm run serve` starts an HTTP server on `localhost:4545` exposing the same search/add logic, so a frontend running in your own browser can call it (e.g. a "Connect Instacart" button). The first request opens the Chrome window (log in there if you haven't already); it then stays open and is reused for every later request. Meant to run on your own machine — never deployed as a shared/hosted service, since whoever can reach it can add to your cart.
 
 ```
 ALLOWED_ORIGINS=http://localhost:3000 npm run serve

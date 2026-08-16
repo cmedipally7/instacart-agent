@@ -1,17 +1,10 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
-import { attach, goHome, listStores, openStore, searchAndAdd } from "./instacart.js";
+import { goHome, launchBrowser, listStores, openStore, searchAndAdd } from "./instacart.js";
 
 function parseArgs(argv) {
-  const args = { cdp: "http://localhost:9222" };
-  const positional = [];
-  for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--cdp") args.cdp = argv[++i];
-    else positional.push(argv[i]);
-  }
-  args.itemsFile = positional[0];
-  return args;
+  return { itemsFile: argv[0] };
 }
 
 async function promptChoice(question, options) {
@@ -32,9 +25,9 @@ async function promptChoice(question, options) {
 }
 
 async function main() {
-  const { cdp, itemsFile } = parseArgs(process.argv.slice(2));
+  const { itemsFile } = parseArgs(process.argv.slice(2));
   if (!itemsFile) {
-    console.error("Usage: instacart-cart <items.json> [--cdp http://localhost:9222]");
+    console.error("Usage: instacart-cart <items.json>");
     process.exit(1);
   }
 
@@ -44,15 +37,13 @@ async function main() {
     process.exit(1);
   }
 
-  console.log(`Connecting to Chrome at ${cdp} ...`);
-  console.log("(Start Chrome with --remote-debugging-port=9222 and be logged into Instacart first.)");
-  const { browser, page } = await attach(cdp);
+  console.log("Opening Chrome (first run creates a dedicated profile — log into Instacart there once)...");
+  const { page } = await launchBrowser();
 
   await goHome(page);
   const stores = await listStores(page);
   if (stores.length === 0) {
     console.error("No stores found on the Instacart homepage. Is the delivery address set?");
-    await browser.close();
     process.exit(1);
   }
 
@@ -70,10 +61,12 @@ async function main() {
     results.push(result);
   }
 
-  console.log("\nDone. Cart was NOT checked out — review and pay in Chrome yourself.");
+  console.log("\nDone. Cart was NOT checked out — review and pay in the Chrome window yourself.");
   console.table(results.map((r) => ({ query: r.query, added: r.added, matched: r.matchedName ?? "", qty: r.quantity ?? "" })));
 
-  await browser.close();
+  // Left open on purpose so you can review the cart immediately — the
+  // browser is a real, separate Chrome process and stays open after this.
+  process.exit(0);
 }
 
 main().catch((err) => {
