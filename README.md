@@ -33,10 +33,16 @@ A Chrome window opens automatically on first run. Log into Instacart there — t
 
 ## Using it from a web app (local agent mode)
 
-`npm run serve` starts an HTTP server on `localhost:4545` exposing the same search/add logic, so a frontend running in your own browser can call it (e.g. a "Connect Instacart" button). The first request opens the Chrome window (log in there if you haven't already); it then stays open and is reused for every later request. Meant to run on your own machine — never deployed as a shared/hosted service, since whoever can reach it can add to your cart.
+```
+npm run serve
+```
+
+Starts an HTTP server on `localhost:4545` exposing the same search/add logic, so a frontend running in your own browser can call it (e.g. a "Connect Instacart" button). The first request opens the Chrome window (log in there if you haven't already); it then stays open and is reused for every later request. Meant to run on your own machine — never deployed as a shared/hosted service, since whoever can reach it can add to your cart.
+
+By default this allows requests from `http://localhost:3000` (local dev) and the deployed `automated-health` frontend. To allow a different frontend origin, override with a comma-separated list:
 
 ```
-ALLOWED_ORIGINS=http://localhost:3000 npm run serve
+ALLOWED_ORIGINS=http://localhost:3000,https://your-frontend.example.com npm run serve
 ```
 
 `ALLOWED_ORIGINS` is a comma-separated allowlist of frontend origins permitted to call this agent (CORS + [Private Network Access](https://developer.chrome.com/blog/private-network-access-preflight) are both enforced — there's no wildcard `*` option, on purpose).

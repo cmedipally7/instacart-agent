@@ -6,7 +6,9 @@ const PORT = process.env.PORT ? Number(process.env.PORT) : 4545;
 // Comma-separated list of origins allowed to call this agent, e.g. your
 // hosted frontend's URL. "*" is intentionally not supported: this agent can
 // add items to a real cart, so only known origins should be allowed to call it.
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? "http://localhost:3000")
+// Defaults cover local dev and the deployed automated-health frontend.
+const DEFAULT_ALLOWED_ORIGINS = "http://localhost:3000,https://automated-health-eosin.vercel.app";
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? DEFAULT_ALLOWED_ORIGINS)
   .split(",")
   .map((s) => s.trim())
   .filter(Boolean);
