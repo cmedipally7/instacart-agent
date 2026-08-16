@@ -45,10 +45,12 @@ export async function goHome(page) {
 }
 
 // Picks the most name-like line out of a store tile's text, since badges
-// like "$15 OFF" or "No markups" often render before the store name.
+// like "$15 OFF", "No markups", or "N in cart" (a store you've already
+// added items to) often render before the actual store name.
+const BADGE_LINE = /^\$|off$|no markups$|min$|mi$|^\d+\s+in\s+cart$/i;
 function bestNameLine(text) {
   const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
-  const candidates = lines.filter((l) => /[A-Za-z]{3,}/.test(l) && !/^\$|off$|no markups$|min$|mi$/i.test(l));
+  const candidates = lines.filter((l) => /[A-Za-z]{3,}/.test(l) && !BADGE_LINE.test(l));
   return (candidates[0] ?? lines[0] ?? "").trim();
 }
 
