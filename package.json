@@ -1,0 +1,18 @@
+{
+  "name": "instacart-agent",
+  "version": "0.1.0",
+  "description": "Add grocery items to your Instacart cart via your own already-logged-in Chrome. Use as a CLI, or run `serve` to expose a local HTTP agent for a frontend to call.",
+  "type": "module",
+  "bin": {
+    "instacart-cart": "./src/index.js"
+  },
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "serve": "node src/server.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "playwright-core": "^1.47.0"
+  }
+}
