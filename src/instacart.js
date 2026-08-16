@@ -61,34 +61,50 @@ async function inStoreSearch(page, query) {
   await box.fill("");
   await box.type(query, { delay: 20 });
   await page.keyboard.press("Enter");
-  await page.waitForTimeout(1500);
+
+  // Results render async after the SPA route change; a fixed short sleep
+  // here was racing the page and reporting false "no results" for items
+  // that genuinely exist. Wait for either an outcome to actually appear.
+  await Promise.race([
+    page.getByText(/^No results for/i).first().waitFor({ timeout: 8000 }),
+    page.getByRole("button", { name: ADD_BUTTON_NAME }).first().waitFor({ timeout: 8000 }),
+  ]).catch(() => {});
+  await page.waitForTimeout(300);
 }
+
+// The real accessible name is "Add {qty} {unit} {product name}" (e.g.
+// "Add 1 ct Northern Catch Chunk Light Tuna in Water"), never literally
+// "Add" — confirmed by inspecting the live page, since an exact-match
+// selector silently matched nothing and reported false "no results" for
+// every item without ever clicking anything.
+const ADD_BUTTON_NAME = /^Add\b/;
 
 // Adds the top matching result for `query` and sets its cart quantity.
 // Returns a result record; never proceeds to checkout.
 export async function searchAndAdd(page, { query, quantity = 1 }) {
   await inStoreSearch(page, query);
 
-  const card = page
-    .locator("main")
-    .locator("div")
-    .filter({ has: page.getByRole("button", { name: /^Add$/ }) })
-    .first();
+  // A "No results for X" page still shows unrelated suggested-item Add
+  // buttons ("Related items") — treat that heading as authoritative rather
+  // than grabbing one of those unrelated products.
+  if (await page.getByText(/^No results for/i).count()) {
+    return { query, added: false, reason: "no results" };
+  }
 
-  const addButton = card.getByRole("button", { name: /^Add$/ }).first();
+  const addButton = page.getByRole("button", { name: ADD_BUTTON_NAME }).first();
   const exists = await addButton.count();
   if (!exists) {
     return { query, added: false, reason: "no results" };
   }
 
-  const nameLocator = card.locator("text=/.+/").first();
-  const name = (await nameLocator.innerText().catch(() => query)).split("\n")[0];
+  const accessibleName = await addButton.evaluate((el) => el.getAttribute("aria-label") || el.textContent);
+  const name = accessibleName.replace(/^Add\s+/i, "").trim() || query;
 
   await addButton.click();
   await page.waitForTimeout(500);
 
   for (let i = 1; i < quantity; i++) {
-    const plus = card.getByRole("button", { name: "+" }).first();
+    const plus = page.getByRole("button", { name: /^(Increase quantity|\+)$/i }).first();
     if (await plus.count()) {
       await plus.click();
       await page.waitForTimeout(300);
