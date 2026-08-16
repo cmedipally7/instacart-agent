@@ -56,7 +56,12 @@ async function main() {
   const results = [];
   for (const item of items) {
     process.stdout.write(`Searching "${item.query}" x${item.quantity ?? 1} ... `);
-    const result = await searchAndAdd(page, item);
+    let result;
+    try {
+      result = await searchAndAdd(page, item);
+    } catch (err) {
+      result = { query: item.query, added: false, reason: err.message };
+    }
     console.log(result.added ? `added "${result.matchedName}"` : `skipped (${result.reason})`);
     results.push(result);
   }
