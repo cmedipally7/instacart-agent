@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createServer } from "node:http";
-import { closeBrowser, goHome, launchBrowser, listStores, openStore, searchAndAdd } from "./instacart.js";
+import { closeBrowser, goHome, launchBrowser, listStores, openCart, openStore, searchAndAdd } from "./instacart.js";
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4545;
 // Comma-separated list of origins allowed to call this agent, e.g. your
@@ -71,6 +71,7 @@ const server = createServer(async (req, res) => {
           results.push({ query: item.query, added: false, reason: err.message });
         }
       }
+      await openCart(page);
       return sendJson(res, 200, { results });
     }
 

@@ -75,6 +75,17 @@ export async function openStore(page, href) {
   await page.waitForTimeout(1500);
 }
 
+// Leaves the window on the actual cart list instead of whatever the last
+// search happened to be, so whoever looks at the browser after a run sees
+// what was added, not a stray product page.
+export async function openCart(page) {
+  const cartButton = page.getByRole("button", { name: /View Cart/i }).first();
+  if (await cartButton.count()) {
+    await cartButton.click();
+    await page.waitForTimeout(800);
+  }
+}
+
 async function inStoreSearch(page, query) {
   if (await hasAuthModal(page)) {
     throw new Error("Instacart is showing a login/signup prompt. Log into Instacart in this Chrome window first, then re-run.");

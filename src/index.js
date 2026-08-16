@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile } from "node:fs/promises";
 import { createInterface } from "node:readline/promises";
-import { goHome, launchBrowser, listStores, openStore, searchAndAdd } from "./instacart.js";
+import { goHome, launchBrowser, listStores, openCart, openStore, searchAndAdd } from "./instacart.js";
 
 function parseArgs(argv) {
   return { itemsFile: argv[0] };
@@ -65,6 +65,8 @@ async function main() {
     console.log(result.added ? `added "${result.matchedName}"` : `skipped (${result.reason})`);
     results.push(result);
   }
+
+  await openCart(page);
 
   console.log("\nDone. Cart was NOT checked out — review and pay in the Chrome window yourself.");
   console.table(results.map((r) => ({ query: r.query, added: r.added, matched: r.matchedName ?? "", qty: r.quantity ?? "" })));
